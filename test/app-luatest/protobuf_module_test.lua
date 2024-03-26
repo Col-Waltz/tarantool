@@ -298,3 +298,14 @@ g.test_module_exception_enum_double_definition = function()
     local msg = 'Double definition of enum field "error2" by 2'
     t.assert_error_msg_contains(msg, protobuf.enum, enum_name, enum_def)
 end
+
+g.test_module_exception_enum_missing_zero = function()
+    local enum_name = 'test'
+    local enum_def = {
+        error1 = 1,
+        error2 = 2,
+        error3 = 3,
+    }
+    local msg = '"test" definition does not contain a field with id = 0'
+    t.assert_error_msg_contains(msg, protobuf.enum, enum_name, enum_def)
+end

@@ -2,12 +2,12 @@ local ffi = require('ffi')
 local encoder = require('internal.protobuf.wireformat')
 local protocol_mt
 
-local min_field_id = 1
-local reserved_field_id_min = 19000
-local reserved_field_id_max = 19999
-local max_field_id = 2^29 - 1
-local max_int64 = 2^64
-local max_int32 = 2^32
+local MIN_FIELD_ID = 1
+local RESERVED_FIELD_ID_MIN = 19000
+local RESERVED_FIELD_ID_MAX = 19999
+local MAX_FIELD_ID = 2^29 - 1
+local MAX_UINT64 = 2^64
+local MAX_UINT32 = 2^32
 
 local protobuf_types = {
     double = true,
@@ -99,15 +99,15 @@ local function message(message_name, message_def)
             error(('Id %d in field %q was already used'):format(field_id,
                 field_name))
         end
-        if field_id < min_field_id or field_id > max_field_id then
+        if field_id < MIN_FIELD_ID or field_id > MAX_FIELD_ID then
             error(('Id %d in field %q is out of range [%d; %d]'):format(
-                field_id, field_name, min_field_id, max_field_id))
+                field_id, field_name, MIN_FIELD_ID, MAX_FIELD_ID))
         end
-        if field_id >= reserved_field_id_min and
-           field_id <= reserved_field_id_max then
+        if field_id >= RESERVED_FIELD_ID_MIN and
+           field_id <= RESERVED_FIELD_ID_MAX then
            error(('Id %d in field %q is in reserved ' ..
                'id range [%d, %d]'):format(field_id, field_name,
-               reserved_field_id_min, reserved_field_id_max))
+               RESERVED_FIELD_ID_MIN, RESERVED_FIELD_ID_MAX))
         end
         local field_def = {
             type = field_type,
@@ -136,20 +136,24 @@ end
 --     <...>
 -- }
 local function enum(enum_name, enum_def)
-    local value_by_name = {}
+    local id_by_value = {}
     local value_by_id = {}
     for value_name, value_id in pairs(enum_def) do
         if value_by_id[value_id] ~= nil then
             error(('Double definition of enum field %q by %d'):format(
                 value_name, value_id))
         end
-        value_by_name[value_name] = value_id
+        id_by_value[value_name] = value_id
         value_by_id[value_id] = value_name
+    end
+    if value_by_id[0] == nil then
+        error(('%q definition does not contain a field with id = 0'):
+            format(enum_name))
     end
     return {
         type = 'enum',
         name = enum_name,
-        value_by_name = value_by_name,
+        id_by_value = id_by_value,
         value_by_id = value_by_id,
     }
 end
@@ -226,8 +230,8 @@ local function code(data_spec, value)
         return encoder.encode_I64(data_spec, value)
     elseif (protobuf_I32_types[data_type] and
             input_I32_types[type(value)]) then
-        if (type(value) == 'number' and (value > max_int32-1 or
-                value < -max_int32)) then
+        if (type(value) == 'number' and (value > MAX_UINT32-1 or
+                value < -MAX_UINT32)) then
             error(('Input number value %q for %q field does ' ..
                 'not fit in int32'):format(value, data_spec['name']))
         end
@@ -235,8 +239,8 @@ local function code(data_spec, value)
         return encoder.encode_I32(data_spec, value)
     elseif (protobuf_I64_types[data_type] and
             input_I64_types[type(value)]) then
-        if (type(value) == 'number' and (value >= max_int64 or
-                value < -max_int64)) then
+        if (type(value) == 'number' and (value >= MAX_UINT64 or
+                value < -MAX_UINT64)) then
             error(('Input number value %q for %q field does ' ..
                 'not fit in int64'):format(value, data_spec['name']))
         end
@@ -280,7 +284,7 @@ local function encode(protocol, name, data)
             if protobuf_types[field_type] then
                 table.insert(coded_data, code(fields[field_name], value))
             elseif protocol[field_type]['type'] == 'enum' then
-                local values = protocol[field_type]['value_by_name']
+                local values = protocol[field_type]['id_by_value']
                 if type(value) ~= 'number' and values[value] == nil then
                     error(('%q is not defined in %q enum'):format(value,
                         field_type))
