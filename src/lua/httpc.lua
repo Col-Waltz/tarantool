@@ -529,6 +529,8 @@ end
 --
 --      params - a table with query parameters;
 --
+--      http_version - describes a http protocol version;
+--
 --  Returns:
 --      {
 --          status=NUMBER (if the request is completed),

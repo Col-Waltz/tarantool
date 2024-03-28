@@ -214,7 +214,6 @@ httpc_request_new(struct httpc_env *env, const char *method,
 			 curl_easy_header_cb);
 	curl_easy_setopt(req->curl_request.easy, CURLOPT_NOPROGRESS, 1L);
 	curl_easy_setopt(req->curl_request.easy, CURLOPT_NOSIGNAL, 1L);
-
 	ibuf_create(&req->send, &cord()->slabc, 1);
 
 	++env->req_count;
@@ -462,6 +461,36 @@ httpc_set_accept_encoding(struct httpc_request *req, const char *encoding)
 	curl_easy_setopt(req->curl_request.easy, CURLOPT_ENCODING,
 			 encoding);
 #endif
+}
+
+int
+httpc_set_http_version(struct httpc_request *req, const char *version)
+{
+	if (strcmp(version, "1.0") == 0){
+		curl_easy_setopt(req->curl_request.easy, 
+			CURL_HTTP_VERSION_1_0, version);
+	}
+	if (strcmp(version, "1.1") == 0){
+                curl_easy_setopt(req->curl_request.easy,
+                        CURL_HTTP_VERSION_1_1, version);
+        }
+	if (strcmp(version, "2") == 0){
+                curl_easy_setopt(req->curl_request.easy,
+                        CURL_HTTP_VERSION_2, version);
+        }
+	if (strcmp(version, "2-tls") == 0){
+                curl_easy_setopt(req->curl_request.easy,
+                        CURL_HTTP_VERSION_2TLS, version);
+        }
+	if (strcmp(version, "2-prior-knowledge") == 0){
+                curl_easy_setopt(req->curl_request.easy,
+                        CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE, version);
+        }
+	else{
+		diag_set(IllegalParams, "Not a supported http version");
+		return -1;
+	}
+	return 0;
 }
 
 /**

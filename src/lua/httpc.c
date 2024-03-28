@@ -337,7 +337,7 @@ luaT_httpc_request(lua_State *L)
 	lua_getfield(L, 5, "timeout");
 	if (!lua_isnil(L, -1))
 		timeout = lua_tonumber(L, -1);
-	lua_pop(L, 1);
+	lua_pop(L,  1);
 
 	lua_getfield(L, 5, "max_header_name_length");
 	if (!lua_isnil(L, -1))
@@ -352,6 +352,11 @@ luaT_httpc_request(lua_State *L)
 	lua_getfield(L, 5, "interface");
 	if (!lua_isnil(L, -1))
 		httpc_set_interface(req, lua_tostring(L, -1));
+	lua_pop(L, 1);
+
+	lua_getfield(L, 5, "http_version");
+	if (!lua_isnil(L, -1))
+		httpc_set_http_version(req, lua_tostring(L, -1));
 	lua_pop(L, 1);
 
 	lua_getfield(L, 5, "follow_location");
